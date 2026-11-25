@@ -645,9 +645,10 @@ impl Staging {
         // write to the same pages through another view) is still found by
         // the hash, which is taken every eighth frame only, by the
         // texture's address, so the textures take turns.
-        // `VICTORY_TEXTURE_GUARD=0` hashes at every check, as before.
+        // Default to hashing at every check: writes through another view can
+        // otherwise leave movie frames stale. Opt into the faster guard with 1.
         static GUARD: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-        if *GUARD.get_or_init(|| std::env::var_os("VICTORY_TEXTURE_GUARD").is_none_or(|v| v != "0"))
+        if *GUARD.get_or_init(|| std::env::var_os("VICTORY_TEXTURE_GUARD").is_some_and(|v| v == "1"))
             && let Some((now, written)) = waited(1, || crate::watch::writes(start, start + size, true))
         {
             const HASH_EVERY: u64 = 8;
